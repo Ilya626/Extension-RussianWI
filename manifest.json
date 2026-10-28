@@ -1,0 +1,11 @@
+{
+    "display_name": "Russian WI Forms",
+    "loading_order": 120,
+    "requires": [],
+    "optional": [],
+    "js": "index.js",
+    "css": "style.css",
+    "author": "Ilya626",
+    "version": "0.1.0",
+    "auto_update": false
+}

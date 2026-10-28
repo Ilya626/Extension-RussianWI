@@ -1,0 +1,4 @@
+*.dawg binary
+*.intdawg binary
+*.array binary
+vendor/az/dicts/* -text

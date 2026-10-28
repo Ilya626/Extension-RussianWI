@@ -1,0 +1,11 @@
+.rwi-settings label:not(.checkbox_label) { display: block; margin: 8px 0; }
+.rwi-settings .text_pole { width: 100%; }
+.rwi-settings [hidden] { display: none !important; }
+.rwi-hint { opacity: .75; font-size: .9em; }
+.rwi-card { border: 1px solid var(--SmartThemeBorderColor, #555); border-radius: 8px; padding: 10px; margin: 10px 0; }
+.rwi-card summary { cursor: pointer; }
+.rwi-settings pre { white-space: pre-wrap; overflow-wrap: anywhere; font-size: .85em; }
+.rwi-word { border-top: 1px solid var(--SmartThemeBorderColor, #555); padding-top: 8px; margin-top: 8px; }
+.rwi-forms { font-size: .9em; overflow-wrap: anywhere; }
+#rwi_match { padding: 8px 0; font-weight: 600; }
+.rwi-settings button.menu_button { display: inline-block; width: auto; min-width: 140px; max-width: 100%; white-space: nowrap; }
