@@ -1,56 +1,78 @@
-# Russian WI Forms
+# Russian WI Forms — русские словоформы для World Info
 
-A small SillyTavern extension that lets Russian World Info keywords match their inflected forms. Version 0.1.0.
+**Версия 0.1.1.** Расширение SillyTavern, с которым обычный ключ `меч` в книге World Info срабатывает также на `меча`, `мечом` и `мечей`. Подходит для русскоязычных лорбуков и записей памяти, создаваемых другими расширениями.
 
-Write `меч` in a normal lorebook key. Messages containing `меча`, `мечом` or `мечей` can activate that entry. The extension expands dictionary forms locally and passes one generated regex per original keyword to ST's normal scanner.
+Словоформы подбираются локально по словарю. Запросов к модели и внешним API нет, дополнительные токены в промпт не добавляются. Словарь загружается с вашего сервера ST: около 11 МБ до HTTP-сжатия и кеширования браузером. Текст сообщений, содержимое записей и сохранённые ключи остаются прежними.
 
-There are no model requests, external APIs, Python services or extra prompt tokens. The bundled dictionary loads from the ST host, about 11 MB before HTTP compression/browser caching. The book content, saved keys and chat messages are not rewritten.
+## Установка и обновление
 
-## Try it
+1. Откройте в SillyTavern **Расширения → Установить расширение (Install extension)**.
+2. Вставьте адрес репозитория:
 
-1. Put the `Extension-RussianWI` folder in `SillyTavern/public/scripts/extensions/third-party/`. `manifest.json` must be directly inside that folder. Reload ST.
-2. Open **Extensions → Russian WI Forms**. **Enable Russian word forms** and **Use all connected lorebooks** are enabled by default.
-3. Add a normal keyword such as `меч` to a connected WI entry. A message containing `мечом` can now trigger it.
-4. In **Preview a trigger**, enter `меч` and the example `Она ударила мечом.` Click **Preview / Check** to inspect the forms and result.
+   ```text
+   https://github.com/Ilya626/Extension-RussianWI
+   ```
 
-To limit processing, uncheck **Use all connected lorebooks** and select the books to process. This selects where morphology applies; the normal ST character/chat/global book bindings still control which books are connected.
+3. Установите расширение и перезагрузите страницу ST.
+4. Откройте настройки **Russian WI Forms**. Переключатели **Учитывать русские словоформы** и **Все подключённые книги, включая новые** включены по умолчанию. Дождитесь сообщения **Словарь готов**.
 
-## Ambiguous words and invented names
+Для обновления используйте штатное управление расширениями ST: проверьте обновления, обновите Russian WI Forms и перезагрузите страницу. В манифесте включено `auto_update`; автоматическое обновление выполняет сам ST согласно своим настройкам. После установки из ZIP или ручного копирования штатное Git-обновление недоступно: для него установите расширение по ссылке выше.
 
-`стали` can be a noun form of `сталь` or a verb form of `стать`. Such a word stays literal until you choose its dictionary meaning in Preview. The choice is saved for that spelling and applies in future scans. Some adjectives can also be nouns: `чёрный` is one example. For `чёрный рыцарь`, choose the adjective interpretation of `чёрный` to match `чёрному рыцарю`.
+Ручная установка: поместите папку `Extension-RussianWI` в `SillyTavern/public/scripts/extensions/third-party/`; файл `manifest.json` должен лежать непосредственно в ней.
 
-Unknown names are not guessed. Add their forms in **Exceptions and custom forms**:
+## Простые примеры
+
+Добавьте запись World Info с обычным ключом, подключите книгу к чату и проверьте пример в панели **Проверка ключа**:
+
+| Ключ | Пример сообщения | Что происходит |
+| --- | --- | --- |
+| `меч` | Она ударила мечом. | Форма существительного активирует ключ `меч`. |
+| `читать` | Он читает письмо. | Личные формы глагола распознаются по словарю. Если предложено несколько значений, выберите нужное. |
+| `Элдарион` | Письмо Элдариону. | Для выдуманного имени сначала добавьте ручные формы ниже. |
+
+В разделе **Исключения и ручные формы** вставьте:
 
 ```text
 Элдарион = Элдариона, Элдариону, Элдарионом
 ```
 
-Click **Save exceptions and forms**. To keep a whole keyword unchanged, put it in **Exact keys to leave unchanged**, one key per line. Existing regexes and keys containing ST macros are left unchanged automatically.
+Нажмите **Сохранить исключения и формы**. Для известных словарю имён доступны словарные формы; если имя неоднозначно, выберите нужное значение в проверке ключа. Для неизвестных имён расширение не угадывает склонение.
 
-The dictionary parser does not correct typos or stretched letters. It expands grammatical forms, not synonyms or arbitrary words with the same prefix. `мечтать` does not match the generated forms of `меч`. Generated regexes have Unicode word boundaries; they do not rely on JavaScript's ASCII-oriented `\b`. Letter-case matching follows the native entry/global setting. The optional е/ё checkbox applies to generated forms.
+У ключа `стали` возможны значения `сталь` и `стать`. Пока значение не выбрано в **Проверке ключа**, слово остаётся буквальным. Выбор запоминается для этого написания и используется при следующих сканированиях. В словосочетании `чёрный рыцарь` выберите для `чёрный` значение **прилагательное**, если словарь также предлагает существительное; тогда доступно совпадение с `чёрному рыцарю`.
 
-Phrase words stay in their original order with whitespace between them. Each word is expanded separately, without building a Cartesian product of entire phrases. This is morphology, not a syntactic or semantic parser: it does not infer a word's meaning from the surrounding scene or validate agreement between all phrase words.
+Чтобы оставить конкретный ключ буквальным, добавьте его в **Ключи без изменений**. Чтобы обрабатывать только некоторые книги, выключите **Все подключённые книги, включая новые** и выберите книги в списке. Этот список определяет, где применяются словоформы; само подключение книг по-прежнему задаётся штатными настройками ST.
 
-## Native ST behavior
+## World Memory и Summaryception
 
-Both primary and secondary keywords are expanded. **One original keyword remains one keyword**, so AND ALL filters and inclusion-group scoring do not start counting each inflection as another requirement or point. Native probabilities, recursion, book bindings, budgets and insertion positions still run in ST.
+[World Memory](https://github.com/Ilya626/Extension-WorldMemory) создаёт и обновляет записи World Info по пакетам памяти Summaryception. В записанных ключах остаются обычные слова: например, `меч` или имя персонажа. Записи сохраняются штатным механизмом ST (`saveWorldInfo`), а Russian WI Forms обрабатывает их при следующем нативном сканировании через событие `WORLDINFO_ENTRIES_LOADED`. Отдельный API для передачи ключей между расширениями не требуется; регулярные выражения обратно в книгу не записываются.
 
-The extension listens to ST's `WORLDINFO_ENTRIES_LOADED` event and changes only scan-time entry copies. ST's JSON entry hash still sees the original keys; its subsequent structured clone receives the generated regexes. This preserves entry hashes used by sticky/cooldown effects. There is no monkey patch of the WI scanner and no rewriting of native ST files. If dictionary preparation fails, the unmodified keyword arrays remain available to native matching.
+Оставьте включённым режим **Все подключённые книги, включая новые**, чтобы новые книги World Memory автоматически получали словоформы. В режиме выбранных книг добавляйте новую книгу в список вручную. Книга должна быть подключена в ST; установка Russian WI Forms сама её не подключает.
 
-## Memory Books and other WI writers
+Для индикатора подключения доступен только статус:
 
-The first integration target is [Memory Books](https://github.com/aikohanasaki/SillyTavern-MemoryBooks), the project listed in ST's extension catalog. Its lorebook writer uses native `saveWorldInfo` / `worldInfoCache` and WI update events. Newly created or modified Russian keys therefore reach morphology at the next native scan; no copy of generated regexes is written back into Memory Books' memory records or rollback fingerprints.
+```js
+globalThis.RussianWIForms?.getStatus();
+// { version: '0.1.1', enabled: true, ready: true }
+```
 
-**Use all connected lorebooks** also covers newly created chat books. In selected-books mode, add each new book to the selection. Keys-only changes naturally produce a fresh compilation; no manual cache reset is needed.
+`enabled` отражает переключатель словоформ, `ready` — готовность словаря. Метод возвращает неизменяемый снимок; через него нельзя менять настройки или ключи. Во время загрузки `ready` равен `false`. Отсутствие объекта означает, что модуль ещё не загружен или расширение не установлено.
 
-Other writers using native WI data follow the same path. Custom injection pipelines that bypass native WI key scanning need their own integration check. Vector-only retrieval and constant entries do not become keyword-filtered simply by installing this addon.
+Наш форк [Summaryception](https://github.com/Ilya626/Extension-Summaryception) использует штатный сканер World Info для отобранного текста: этот путь получает те же словоформы. Включение WI и бюджет справочного лора в запросе по-прежнему задаются настройками Summaryception.
 
-Our Summaryception fork calls ST's native WI scanner, so the same morphology event also handles its selected-passage scans. Existing Summaryception settings still control whether WI is scanned and how much reference lore is included.
+Другие расширения, например [Memory Books](https://github.com/aikohanasaki/SillyTavern-MemoryBooks), получают словоформы тем же путём, когда записывают обычные ключи и используют нативный WI. Собственные текстовые фильтры, векторный поиск и вставка в обход сканера требуют отдельной интеграции. В частности, отдельные механизмы MemoryBooks Auto используют собственное сопоставление текста и автоматически словоформы не получают.
 
-Verified locally with **SillyTavern 1.19.0**, **Memory Books 9.3.9** (`c2ef390`) and **Summaryception local.18**. A real Memory Books writer created a `меч` entry, which activated on `мечом`; its update to `рыцарь` activated on `рыцарю` and stopped activating on the old key. Saved keys and the `stmemorybooks` flag stayed intact. Native checks also verified primary/secondary keys, a `мечтать` negative control, unchanged entry hashes, active sticky/cooldown, manual aliases and the Summaryception WI path. Mobile Edge UI was inspected. No external model was called; these checks establish matching and integration, not AI-generated lore quality.
+## Как это работает и ограничения
 
-**MemoryBooks Auto is a separate integration target.** Some of its living-lore features use their own text matchers instead of native WI scanning. Those paths do not acquire Russian morphology automatically from this extension. Native WI activation still goes through the hook described above.
+- Обрабатываются основные и дополнительные ключи. **Один исходный ключ остаётся одним условием**: словоформы не превращаются в дополнительные требования AND ALL или дополнительные баллы группы. Вероятности, рекурсия, бюджет, привязки книг и позиции вставки выполняются штатным ST.
+- Расширение меняет только копии записей на время сканирования. При вычислении хеша ST видит исходные ключи, поэтому идентичность записи для sticky/cooldown сохраняется. Исходники ST и сканер не переписываются. При ошибке обработки ST получает исходные ключи.
+- Подбираются грамматические формы словаря, а не синонимы. Ключ `меч` не срабатывает от `мечтать`. Опечатки и растянутые буквы не исправляются.
+- Для фраз порядок слов сохраняется; слова расширяются отдельно, между ними допускаются пробельные символы. Смысл сцены и согласование слов расширение не определяет.
+- Регулярные выражения и ключи с макросами ST остаются без изменений. Регистр следует штатной настройке записи или ST. Настройка е/ё применяется к сгенерированным формам.
+- Постоянные записи и чисто векторное извлечение не превращаются в поиск по ключам. Наличие совпадения ещё не гарантирует вставку: действуют остальные условия и бюджет World Info.
+- Словарь собран в 2016 году. Новые слова и выдуманные имена могут потребовать ручных форм. Большие библиотеки на физическом телефоне отдельно не измерялись.
 
-## License and dictionary
+Механика словоформ версии 0.1.0 ранее проверялась локально с SillyTavern 1.19.0, Memory Books 9.3.9 и Summaryception local.18: основные/дополнительные ключи, обновление записей, ручные формы, sticky/cooldown и сохранение исходных ключей. Версия 0.1.1 добавляет русский интерфейс, документацию и статус подключения; механизм склонений не меняется. Совместная генерация лора новым World Memory не входит в эту прежнюю проверку.
 
-Addon code: MIT, see [LICENSE](LICENSE). Az.js: MIT. Bundled OpenCorpora-derived dictionary data: CC BY-SA 3.0. See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) for the pinned upstream revision, original notices and dictionary age.
+## Лицензия и словарь
+
+Код расширения — MIT, см. [LICENSE](LICENSE). Библиотека [Az.js](https://github.com/denull/Az.js) — MIT. Словарь на основе [OpenCorpora](https://opencorpora.org/) сохраняет лицензию **CC BY-SA 3.0**, отдельно от лицензии кода. Авторство, закреплённая upstream-ревизия, исходные уведомления и дата словаря приведены в [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).

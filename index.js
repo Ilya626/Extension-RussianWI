@@ -1,11 +1,20 @@
 import { loadDictionary, compileKey, expandEntries, clearCompiledKeys } from './morphology.js';
 
 const KEY = 'russianWIForms';
+const VERSION = '0.1.1';
 const defaults = { enabled: true, allBooks: true, books: [], foldYo: true, excludedKeys: [], aliases: {}, senses: {} };
 const canonical = text => text.trim().toLocaleLowerCase('ru');
 const status = text => $('#rwi_status').text(text);
 let nativeWI;
 let matchingErrorReported = false;
+let dictionaryReady = false;
+const partOfSpeech = { NOUN: 'существительное', ADJF: 'прилагательное', ADJS: 'краткое прилагательное', COMP: 'сравнительная степень', VERB: 'глагол', INFN: 'инфинитив', PRTF: 'причастие', PRTS: 'краткое причастие', GRND: 'деепричастие', NUMR: 'числительное', ADVB: 'наречие', NPRO: 'местоимение', PRED: 'предикатив', PREP: 'предлог', CONJ: 'союз', PRCL: 'частица', INTJ: 'междометие' };
+
+Object.defineProperty(globalThis, 'RussianWIForms', {
+    value: Object.freeze({
+        getStatus: () => Object.freeze({ version: VERSION, enabled: (SillyTavern.getContext().extensionSettings[KEY]?.enabled ?? defaults.enabled) === true, ready: dictionaryReady }),
+    }),
+});
 
 function settings() {
     const stored = SillyTavern.getContext().extensionSettings[KEY] ??= {};
@@ -42,15 +51,15 @@ async function preview() {
     const regex = nativeWI.parseRegexFromString(result.key);
     const text = $('#rwi_example').val();
     const matches = regex ? regex.test(text) : canonical(text).includes(canonical(result.key));
-    $('#rwi_match').text((!s.enabled ? 'Preview only — word forms are disabled for real scans. ' : '')
-        + (matches ? 'Match — this keyword can activate the entry.' : 'No match.'));
+    $('#rwi_match').text((!s.enabled ? 'Только проверка: словоформы отключены при сканировании. ' : '')
+        + (matches ? 'Совпадение: ключ может активировать запись.' : 'Совпадения нет.'));
     for (const word of result.words) {
         const row = document.createElement('div'); row.className = 'rwi-word';
         const title = document.createElement('strong'); title.textContent = word.word; row.append(title);
         if (word.choices.length > 1 || s.senses[canonical(word.word)]) {
             const select = document.createElement('select'); select.className = 'text_pole';
-            select.append(new Option('Keep literal — choose a meaning to expand', ''));
-            for (const choice of word.choices) select.append(new Option(`${choice.lemma} · ${choice.pos} · ${choice.forms.length} forms`, choice.id));
+            select.append(new Option('Без изменений — выберите значение для словоформ', ''));
+            for (const choice of word.choices) select.append(new Option(`${choice.lemma} · ${partOfSpeech[choice.pos] || choice.pos} · форм: ${choice.forms.length}`, choice.id));
             select.value = s.senses[canonical(word.word)] || '';
             select.addEventListener('change', () => {
                 if (select.value) s.senses[canonical(word.word)] = select.value;
@@ -60,12 +69,12 @@ async function preview() {
             row.append(select);
         }
         const forms = document.createElement('p'); forms.className = 'rwi-forms';
-        forms.textContent = word.choices.length ? word.forms.join(', ') : 'Not in the dictionary. Kept literal; manual forms are available below.';
+        forms.textContent = word.choices.length ? word.forms.join(', ') : 'Нет в словаре. Ключ сохранён без изменений; формы можно добавить вручную ниже.';
         row.append(forms); body.append(row);
     }
 }
 
-function report(error) { console.error('[Russian WI Forms]', error); status(error.message); toastr.error(error.message, 'Russian WI Forms'); }
+function report(error) { console.error('[Russian WI Forms]', error); status(`Ошибка: ${error.message}`); toastr.error(error.message, 'Russian WI Forms — ошибка'); }
 
 async function init() {
     const ctx = SillyTavern.getContext();
@@ -81,14 +90,14 @@ async function init() {
             const aliases = {};
             for (const line of $('#rwi_aliases').val().split(/\r?\n/).filter(line => line.trim())) {
                 const split = line.indexOf('=');
-                if (split <= 0) throw new Error('Use: original key = form, another form');
+                if (split <= 0) throw new Error('Формат: исходный ключ = форма, другая форма');
                 const forms = line.slice(split + 1).split(',').map(form => form.trim()).filter(Boolean);
-                if (!forms.length) throw new Error('Add at least one form after =');
+                if (!forms.length) throw new Error('Добавьте хотя бы одну форму после знака =');
                 aliases[canonical(line.slice(0, split))] = [...new Set(forms)];
             }
             const s = settings(); s.aliases = aliases;
             s.excludedKeys = $('#rwi_excluded').val().split(/\r?\n/).map(key => key.trim()).filter(Boolean);
-            save(); status('Exceptions and manual forms saved.'); preview().catch(report);
+            save(); status('Исключения и ручные формы сохранены.'); preview().catch(report);
         } catch (error) { report(error); }
     });
     ctx.eventSource.on(ctx.eventTypes.WORLDINFO_ENTRIES_LOADED, async payload => {
@@ -97,16 +106,17 @@ async function init() {
             await expandEntries(payload, structuredClone(settings()), nativeWI.world_info_case_sensitive);
             matchingErrorReported = false;
         } catch (error) {
-            status('Word forms unavailable. ST is using the original WI keys.');
-            if (!matchingErrorReported) { console.error('[Russian WI Forms]', error); toastr.warning('Word forms unavailable; original WI keys were kept.', 'Russian WI Forms'); }
+            status('Словоформы недоступны. ST использует исходные ключи World Info.');
+            if (!matchingErrorReported) { console.error('[Russian WI Forms]', error); toastr.warning('Словоформы недоступны; исходные ключи World Info сохранены.', 'Russian WI Forms'); }
             matchingErrorReported = true;
         }
     });
     for (const event of [ctx.eventTypes.WORLDINFO_UPDATED, ctx.eventTypes.CHAT_CHANGED].filter(Boolean)) ctx.eventSource.on(event, () => renderSettings());
     renderSettings(true);
     await loadDictionary();
-    status('Dictionary ready. Forms are generated locally; no model requests.');
-    console.info('[Russian WI Forms] 0.1.0 loaded');
+    dictionaryReady = true;
+    status('Словарь готов. Формы подбираются локально, без запросов к модели.');
+    console.info(`[Russian WI Forms] ${VERSION} loaded`);
 }
 
 init().catch(report);

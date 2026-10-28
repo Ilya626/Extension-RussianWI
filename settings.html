@@ -1,31 +1,31 @@
 <div class="rwi-settings">
     <div class="inline-drawer">
         <div class="inline-drawer-toggle inline-drawer-header">
-            <b>Russian WI Forms · 0.1.0</b><div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
+            <b>Russian WI Forms · 0.1.1</b><div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
         </div>
         <div class="inline-drawer-content">
-            <label class="checkbox_label"><input id="rwi_enabled" type="checkbox"><span>Enable Russian word forms</span></label>
-            <p class="rwi-hint">Russian trigger words match their inflected forms. Your lorebooks and chat text stay unchanged. New or updated Memory Books entries are picked up automatically.</p>
-            <label class="checkbox_label"><input id="rwi_all_books" type="checkbox"><span>Use all connected lorebooks, including newly created books</span></label>
-            <label id="rwi_books_row">Selected lorebooks<select id="rwi_books" class="text_pole" multiple size="4"></select></label>
-            <label class="checkbox_label"><input id="rwi_fold_yo" type="checkbox"><span>Treat е and ё as equivalent in generated forms</span></label>
-            <p id="rwi_status" class="rwi-hint" role="status" aria-live="polite">Loading dictionary…</p>
+            <label class="checkbox_label"><input id="rwi_enabled" type="checkbox"><span>Учитывать русские словоформы</span></label>
+            <p class="rwi-hint">Ключ «меч» распознаёт «мечом» и другие словарные формы. Сохранённые ключи, книги и сообщения не меняются. Новые записи World Memory и других расширений подхватываются при штатном сканировании World Info.</p>
+            <label class="checkbox_label"><input id="rwi_all_books" type="checkbox"><span>Все подключённые книги, включая новые</span></label>
+            <label id="rwi_books_row">Выбранные книги<select id="rwi_books" class="text_pole" multiple size="4"></select></label>
+            <label class="checkbox_label"><input id="rwi_fold_yo" type="checkbox"><span>Считать е и ё равнозначными в словоформах</span></label>
+            <p id="rwi_status" class="rwi-hint" role="status" aria-live="polite">Загрузка словаря…</p>
             <div class="rwi-card">
-                <strong>Preview a trigger</strong>
-                <label>Original keyword or phrase<input id="rwi_preview_key" class="text_pole" value="меч"></label>
-                <label>Example message<textarea id="rwi_example" class="text_pole" rows="2">Она ударила мечом.</textarea></label>
-                <button id="rwi_preview" class="menu_button">Preview / Check</button>
+                <strong>Проверка ключа</strong>
+                <label>Исходный ключ или фраза<input id="rwi_preview_key" class="text_pole" value="меч"></label>
+                <label>Пример сообщения<textarea id="rwi_example" class="text_pole" rows="2">Она ударила мечом.</textarea></label>
+                <button id="rwi_preview" class="menu_button">Проверить словоформы</button>
                 <div id="rwi_match" role="status"></div>
                 <div id="rwi_word_choices"></div>
-                <details><summary>Generated ST key</summary><pre id="rwi_generated"></pre></details>
-                <small class="rwi-hint">Ambiguous words stay literal until you choose a meaning below. For example, стали can mean steel or a form of стать. Unknown names stay literal; add their forms manually if needed.</small>
+                <details><summary>Сгенерированный ключ ST</summary><pre id="rwi_generated"></pre></details>
+                <small class="rwi-hint">У неоднозначных слов сначала выберите значение: «стали» может относиться к «сталь» или «стать». Неизвестные имена остаются без изменений; их формы можно добавить вручную.</small>
             </div>
             <details class="rwi-card">
-                <summary>Exceptions and custom forms</summary>
-                <label>Exact keys to leave unchanged — one per line<textarea id="rwi_excluded" class="text_pole" rows="3" placeholder="мир&#10;замок"></textarea></label>
-                <label>Manual forms — one key per line<textarea id="rwi_aliases" class="text_pole" rows="4" placeholder="Элдарион = Элдариона, Элдариону, Элдарионом"></textarea></label>
-                <button id="rwi_save_exceptions" class="menu_button">Save exceptions and forms</button>
-                <small class="rwi-hint">Format: original key = form, another form. Existing regex keys and ST macros are always left unchanged. A generated form is still part of one original key, including in AND ALL filters and group scoring.</small>
+                <summary>Исключения и ручные формы</summary>
+                <label>Ключи без изменений — по одному на строку<textarea id="rwi_excluded" class="text_pole" rows="3" placeholder="мир&#10;замок"></textarea></label>
+                <label>Ручные формы — один ключ на строку<textarea id="rwi_aliases" class="text_pole" rows="4" placeholder="Элдарион = Элдариона, Элдариону, Элдарионом"></textarea></label>
+                <button id="rwi_save_exceptions" class="menu_button">Сохранить исключения и формы</button>
+                <small class="rwi-hint">Формат: исходный ключ = форма, другая форма. Регулярные выражения и ключи с макросами ST сохраняются без изменений. Все формы одного ключа считаются одним условием, в том числе в AND ALL и при подсчёте баллов группы.</small>
             </details>
         </div>
     </div>
