@@ -1,7 +1,7 @@
-import { loadDictionary, compileKey, expandEntries, clearCompiledKeys } from './morphology.js';
+import { loadDictionary, compileKey, expandEntries, clearCompiledKeys, analyzeWord } from './morphology.js';
 
 const KEY = 'russianWIForms';
-const VERSION = '0.1.1';
+const VERSION = '0.1.2';
 const defaults = { enabled: true, allBooks: true, books: [], foldYo: true, excludedKeys: [], aliases: {}, senses: {} };
 const canonical = text => text.trim().toLocaleLowerCase('ru');
 const status = text => $('#rwi_status').text(text);
@@ -13,6 +13,15 @@ const partOfSpeech = { NOUN: 'существительное', ADJF: 'прила
 Object.defineProperty(globalThis, 'RussianWIForms', {
     value: Object.freeze({
         getStatus: () => Object.freeze({ version: VERSION, enabled: (SillyTavern.getContext().extensionSettings[KEY]?.enabled ?? defaults.enabled) === true, ready: dictionaryReady }),
+        async getLemmas(words) {
+            if (!dictionaryReady || !settings().enabled) return {};
+            const result = {};
+            for (const word of new Set(words)) {
+                if (typeof word !== 'string' || !/^[а-яё]+$/iu.test(word)) continue;
+                result[word] = [...new Set((await analyzeWord(word)).map(item => item.lemma.replace(/ё/g, 'е')))];
+            }
+            return result;
+        },
     }),
 });
 
