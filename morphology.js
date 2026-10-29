@@ -80,13 +80,14 @@ export async function expandEntries(payload, settings, nativeCaseSensitive = fal
             for (const field of ['key', 'keysecondary']) {
                 if (!Array.isArray(entry[field])) continue;
                 const original = entry[field];
+                const raw = typeof original.toJSON === 'function' ? original.toJSON() : original;
                 const expanded = await Promise.all(original.map(key => compileKey(key, settings, entry.caseSensitive ?? nativeCaseSensitive)));
                 if (!expanded.some(key => key.changed)) continue;
                 const keys = expanded.map(key => key.key);
                 // ST hashes JSON before structuredClone. Hash original keys so sticky,
                 // cooldown and delay keep the same entry identity; cloning drops this
                 // non-enumerable method and passes the expanded strings to matching.
-                Object.defineProperty(keys, 'toJSON', { value: () => original });
+                Object.defineProperty(keys, 'toJSON', { value: () => raw });
                 copy[field] = keys;
                 count += expanded.filter(key => key.changed).length;
             }

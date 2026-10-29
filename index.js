@@ -1,7 +1,7 @@
 import { loadDictionary, compileKey, expandEntries, clearCompiledKeys, analyzeWord } from './morphology.js';
 
 const KEY = 'russianWIForms';
-const VERSION = '0.1.2';
+const VERSION = '0.1.3';
 const defaults = { enabled: true, allBooks: true, books: [], foldYo: true, excludedKeys: [], aliases: {}, senses: {} };
 const canonical = text => text.trim().toLocaleLowerCase('ru');
 const status = text => $('#rwi_status').text(text);
