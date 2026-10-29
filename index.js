@@ -88,7 +88,7 @@ function report(error) { console.error('[Russian WI Forms]', error); status(`–û—
 async function init() {
     const ctx = SillyTavern.getContext();
     nativeWI = await import('/scripts/world-info.js');
-    $('#extensions_settings2').append(await ctx.renderExtensionTemplateAsync('third-party/Extension-RussianWI', 'settings', {}));
+    $('#extensions_settings2').append(await ctx.renderExtensionTemplateAsync('third-party/Extension-RussianWI', 'settings', { version: VERSION }));
     for (const [id, key] of [['#rwi_enabled', 'enabled'], ['#rwi_all_books', 'allBooks'], ['#rwi_fold_yo', 'foldYo']]) {
         $(id).on('change', function () { settings()[key] = this.checked; save(); renderSettings(); });
     }
