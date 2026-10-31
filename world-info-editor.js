@@ -1,4 +1,5 @@
 import { compileKey } from './morphology.js';
+import { nameEditor, nameDrafts } from './name-editor.js';
 
 const canonical = text => text.trim().toLocaleLowerCase('ru');
 const keySelector = 'select[name="key"], textarea[name="key"], select[name="keysecondary"], textarea[name="keysecondary"]';
@@ -44,7 +45,7 @@ export function installWorldInfoEditor({ nativeWI, getSettings, saveSettings, is
         const active = s.enabled && (s.allBooks || s.books.includes(book));
         const caseValue = container.closest('.world_entry')?.querySelector('select[name="caseSensitive"]')?.value;
         const caseSensitive = caseValue === 'true' ? true : caseValue === 'false' ? false : nativeWI.world_info_case_sensitive;
-        const signature = JSON.stringify([keys, active, s.foldYo, s.aliases, s.senses, s.excludedKeys, caseSensitive, isReady()]);
+        const signature = JSON.stringify([keys, active, s.foldYo, s.aliases, s.senses, s.excludedKeys, s.guessNames, s.names, caseSensitive, isReady()]);
         let state = states.get(container);
         if (state?.signature === signature) return;
         if (!state) {
@@ -64,6 +65,7 @@ export function installWorldInfoEditor({ nativeWI, getSettings, saveSettings, is
         if (state.request !== request || !container.isConnected) return;
 
         // Settings or key edits can arrive while another manual-form draft is open.
+        const nameFormsDrafts = nameDrafts(panel);
         const drafts = new Map([...panel.querySelectorAll('details[data-key]')].map(row => [row.dataset.key, {
             open: row.open,
             value: row.querySelector('textarea')?.value,
@@ -76,9 +78,10 @@ export function installWorldInfoEditor({ nativeWI, getSettings, saveSettings, is
             const key = result.source;
             const manual = s.aliases[canonical(key)] || [];
             const excluded = s.excludedKeys.some(item => canonical(item) === canonical(key));
-            const unknown = result.words.filter(word => !word.choices.length);
-            const ambiguous = result.words.filter(word => word.choices.length > 1 && !word.selected);
-            const recognized = result.words.some(word => word.selected && word.forms.length > 1);
+            const unknown = result.words.filter(word => !word.choices.length && !word.name);
+            const proposed = result.words.some(word => word.name);
+            const ambiguous = result.words.filter(word => word.choices.length > 1 && !word.selected && !word.name);
+            const recognized = result.words.some(word => word.selected && word.forms.length > 1 && !word.name);
             const row = element('details', 'rwi-key-forms'); row.dataset.key = key;
             row.open = drafts.get(key)?.open || false;
             const summary = element('summary', 'rwi-key-summary');
@@ -87,6 +90,7 @@ export function installWorldInfoEditor({ nativeWI, getSettings, saveSettings, is
             if (excluded) badges.append(element('span', 'rwi-badge', 'исключён'));
             else {
                 if (recognized) badges.append(element('span', 'rwi-badge rwi-dictionary', 'словарь'));
+                if (proposed) badges.append(element('span', 'rwi-badge rwi-manual', 'склонение имени'));
                 if (manual.length && result.words.length) badges.append(element('span', 'rwi-badge rwi-manual', `вручную · ${manual.length}`));
                 if (ambiguous.length) badges.append(element('span', 'rwi-badge rwi-attention', 'выбрать значение'));
                 if (unknown.length) badges.append(element('span', 'rwi-badge rwi-attention', 'нет в словаре'));
@@ -100,7 +104,7 @@ export function installWorldInfoEditor({ nativeWI, getSettings, saveSettings, is
             if (!result.words.length) {
                 body.append(element('p', 'rwi-hint', excluded ? 'Этот ключ исключён из обработки в настройках Russian WI Forms.' : 'Регулярное выражение, макрос или нерусский ключ: ST использует его без изменений.'));
             } else {
-                for (const word of result.words) {
+                for (const [wordIndex, word] of result.words.entries()) {
                     const wordBlock = element('div', 'rwi-editor-word');
                     wordBlock.append(element('strong', '', word.word));
                     if (word.choices.length > 1 || s.senses[canonical(word.word)]) {
@@ -117,7 +121,10 @@ export function installWorldInfoEditor({ nativeWI, getSettings, saveSettings, is
                         });
                         label.append(select); wordBlock.append(label);
                     }
-                    wordBlock.append(element('p', 'rwi-forms', word.choices.length ? word.forms.join(', ') : 'Словарь не распознал слово или имя. Добавьте известные вам формы ниже.'));
+                    wordBlock.append(element('p', 'rwi-forms', word.choices.length || word.name ? word.forms.join(', ') : 'Нет словарного разбора. Можно выбрать род для склонения имени.'));
+                    const draftKey = JSON.stringify([key, wordIndex, canonical(word.word)]);
+                    if (word.name || !word.choices.length) wordBlock.append(nameEditor(word, { getSettings, save: saveSettings, refresh, draftKey,
+                        draft: nameFormsDrafts.get(draftKey) }));
                     body.append(wordBlock);
                 }
                 const label = element('label', 'rwi-editor-label', 'Ручные формы этого ключа');

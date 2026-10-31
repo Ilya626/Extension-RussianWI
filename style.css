@@ -33,6 +33,9 @@
 .rwi-editor-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
 .rwi-editor-actions .menu_button { width: auto; margin: 0; padding: 6px 10px; white-space: normal; }
 .rwi-inactive .rwi-entry-heading { opacity: .7; }
+.rwi-name-editor { margin: 8px 0; }
+.rwi-name-cases { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 3px 10px; margin-top: 8px; }
+.rwi-name-cases label { min-width: 0; font-size: .9em; }
 [name="keywordsAndLogicBlock"]:has(.rwi-entry-forms) { align-items: flex-start; }
 @media (max-width: 600px) {
     [name="keywordsAndLogicBlock"]:has(.rwi-entry-forms) { flex-wrap: wrap; }

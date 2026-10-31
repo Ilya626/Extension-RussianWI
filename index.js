@@ -1,9 +1,10 @@
 import { loadDictionary, compileKey, expandEntries, clearCompiledKeys, analyzeWord } from './morphology.js';
 import { installWorldInfoEditor } from './world-info-editor.js';
+import { nameEditor, nameDrafts } from './name-editor.js';
 
 const KEY = 'russianWIForms';
-const VERSION = '0.1.4';
-const defaults = { enabled: true, allBooks: true, books: [], foldYo: true, excludedKeys: [], aliases: {}, senses: {} };
+const VERSION = '0.1.5';
+const defaults = { enabled: true, allBooks: true, books: [], foldYo: true, guessNames: true, names: {}, excludedKeys: [], aliases: {}, senses: {} };
 const canonical = text => text.trim().toLocaleLowerCase('ru');
 const status = text => $('#rwi_status').text(text);
 let nativeWI;
@@ -46,6 +47,7 @@ function renderSettings(initial = false) {
     $('#rwi_enabled').prop('checked', s.enabled);
     $('#rwi_all_books').prop('checked', s.allBooks);
     $('#rwi_fold_yo').prop('checked', s.foldYo);
+    $('#rwi_guess_names').prop('checked', s.guessNames);
     $('#rwi_books_row').prop('hidden', s.allBooks);
     const books = document.getElementById('rwi_books'); books.replaceChildren();
     for (const name of new Set([...(nativeWI.world_names || []), ...s.books])) {
@@ -61,14 +63,14 @@ function renderSettings(initial = false) {
 async function preview() {
     const s = settings(), key = $('#rwi_preview_key').val();
     const result = await compileKey(key, s);
-    const body = document.getElementById('rwi_word_choices'); body.replaceChildren();
+    const body = document.getElementById('rwi_word_choices'), drafts = nameDrafts(body); body.replaceChildren();
     $('#rwi_generated').text(result.key);
     const regex = nativeWI.parseRegexFromString(result.key);
     const text = $('#rwi_example').val();
     const matches = regex ? regex.test(text) : canonical(text).includes(canonical(result.key));
     $('#rwi_match').text((!s.enabled ? 'Только проверка: словоформы отключены при сканировании. ' : '')
         + (matches ? 'Совпадение: ключ может активировать запись.' : 'Совпадения нет.'));
-    for (const word of result.words) {
+    for (const [wordIndex, word] of result.words.entries()) {
         const row = document.createElement('div'); row.className = 'rwi-word';
         const title = document.createElement('strong'); title.textContent = word.word; row.append(title);
         if (word.choices.length > 1 || s.senses[canonical(word.word)]) {
@@ -84,8 +86,11 @@ async function preview() {
             row.append(select);
         }
         const forms = document.createElement('p'); forms.className = 'rwi-forms';
-        forms.textContent = word.choices.length ? word.forms.join(', ') : 'Нет в словаре. Ключ сохранён без изменений; формы можно добавить вручную ниже.';
+        forms.textContent = word.choices.length || word.name ? word.forms.join(', ') : 'Нет словарного разбора. Можно выбрать род для склонения имени.';
         row.append(forms); body.append(row);
+        const draftKey = JSON.stringify([key, wordIndex, canonical(word.word)]);
+        if (word.name || !word.choices.length) row.append(nameEditor(word, { getSettings: settings, save, draftKey,
+            refresh: () => preview().catch(report), draft: drafts.get(draftKey) }));
     }
 }
 
@@ -95,8 +100,8 @@ async function init() {
     const ctx = SillyTavern.getContext();
     nativeWI = await import('/scripts/world-info.js');
     $('#extensions_settings2').append(await ctx.renderExtensionTemplateAsync('third-party/Extension-RussianWI', 'settings', { version: VERSION }));
-    for (const [id, key] of [['#rwi_enabled', 'enabled'], ['#rwi_all_books', 'allBooks'], ['#rwi_fold_yo', 'foldYo']]) {
-        $(id).on('change', function () { settings()[key] = this.checked; save(); renderSettings(); });
+    for (const [id, key] of [['#rwi_enabled', 'enabled'], ['#rwi_all_books', 'allBooks'], ['#rwi_fold_yo', 'foldYo'], ['#rwi_guess_names', 'guessNames']]) {
+        $(id).on('change', function () { settings()[key] = this.checked; save(); renderSettings(); if (dictionaryReady) preview().catch(report); });
     }
     $('#rwi_books').on('change', function () { settings().books = [...this.selectedOptions].map(option => option.value); save(); });
     $('#rwi_preview').on('click', () => preview().catch(report));

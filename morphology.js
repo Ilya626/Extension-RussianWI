@@ -1,3 +1,5 @@
+import { suggestName } from './name-declension.js';
+
 let dictionary;
 const words = new Map();
 const compiled = new Map();
@@ -39,7 +41,7 @@ function restoreCase(form, original) {
 export async function compileKey(key, settings, caseSensitive = false) {
     if (typeof key !== 'string' || !/[а-яё]/iu.test(key) || key.includes('{{') || /^\/.+\/[a-z]*$/is.test(key)
         || settings.excludedKeys.some(item => canonical(item) === canonical(key))) return { source: key, key, words: [], changed: false };
-    const signature = JSON.stringify([key, caseSensitive, settings.foldYo, settings.senses, settings.aliases]);
+    const signature = JSON.stringify([key, caseSensitive, settings.foldYo, settings.senses, settings.aliases, settings.guessNames, settings.names]);
     if (compiled.has(signature)) return compiled.get(signature);
     const parts = [], details = [];
     let changed = false;
@@ -48,8 +50,11 @@ export async function compileKey(key, settings, caseSensitive = false) {
         if (!/^[а-яё]+$/iu.test(piece)) { parts.push(escapeRegex(piece).replace(/\s+/g, '\\s+')); continue; }
         const choices = await analyzeWord(piece);
         const selected = choices.find(choice => choice.id === settings.senses[canonical(piece)]) || (choices.length === 1 ? choices[0] : null);
-        const forms = selected ? [...new Set(selected.forms.map(form => restoreCase(form, piece)))] : [piece];
-        details.push({ word: piece, choices, selected: selected?.id || '', forms });
+        const name = (settings.names?.[canonical(piece)] || !choices.length)
+            ? suggestName(piece, settings.names?.[canonical(piece)], settings.guessNames !== false && !(settings.aliases[canonical(key)] || []).length)
+            : null;
+        const forms = name && name.mode !== 'off' ? name.forms : selected ? [...new Set(selected.forms.map(form => restoreCase(form, piece)))] : [piece];
+        details.push({ word: piece, choices, selected: selected?.id || '', forms, name });
         if (forms.length > 1) changed = true;
         parts.push(`(?:${forms.map(form => escapeRegex(form)).join('|')})`);
     }
