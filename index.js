@@ -1,13 +1,17 @@
 import { loadDictionary, compileKey, expandEntries, clearCompiledKeys, analyzeWord } from './morphology.js';
+import { installWorldInfoEditor } from './world-info-editor.js';
 
 const KEY = 'russianWIForms';
-const VERSION = '0.1.3';
+const VERSION = '0.1.4';
 const defaults = { enabled: true, allBooks: true, books: [], foldYo: true, excludedKeys: [], aliases: {}, senses: {} };
 const canonical = text => text.trim().toLocaleLowerCase('ru');
 const status = text => $('#rwi_status').text(text);
 let nativeWI;
 let matchingErrorReported = false;
 let dictionaryReady = false;
+let refreshWorldInfoEditor = () => {};
+let aliasesDraftBase = {};
+const serializeAliases = aliases => Object.entries(aliases).map(([key, forms]) => `${key} = ${forms.join(', ')}`).join('\n');
 const partOfSpeech = { NOUN: 'существительное', ADJF: 'прилагательное', ADJS: 'краткое прилагательное', COMP: 'сравнительная степень', VERB: 'глагол', INFN: 'инфинитив', PRTF: 'причастие', PRTS: 'краткое причастие', GRND: 'деепричастие', NUMR: 'числительное', ADVB: 'наречие', NPRO: 'местоимение', PRED: 'предикатив', PREP: 'предлог', CONJ: 'союз', PRCL: 'частица', INTJ: 'междометие' };
 
 Object.defineProperty(globalThis, 'RussianWIForms', {
@@ -34,6 +38,7 @@ function settings() {
 function save() {
     clearCompiledKeys();
     SillyTavern.getContext().saveSettingsDebounced();
+    refreshWorldInfoEditor();
 }
 
 function renderSettings(initial = false) {
@@ -48,7 +53,8 @@ function renderSettings(initial = false) {
     }
     if (initial) {
         $('#rwi_excluded').val(s.excludedKeys.join('\n'));
-        $('#rwi_aliases').val(Object.entries(s.aliases).map(([key, forms]) => `${key} = ${forms.join(', ')}`).join('\n'));
+        aliasesDraftBase = structuredClone(s.aliases);
+        $('#rwi_aliases').val(serializeAliases(s.aliases));
     }
 }
 
@@ -104,7 +110,15 @@ async function init() {
                 if (!forms.length) throw new Error('Добавьте хотя бы одну форму после знака =');
                 aliases[canonical(line.slice(0, split))] = [...new Set(forms)];
             }
-            const s = settings(); s.aliases = aliases;
+            const s = settings();
+            // Apply only edits in this draft; preserve forms saved from a book meanwhile.
+            for (const key of new Set([...Object.keys(aliasesDraftBase), ...Object.keys(aliases)])) {
+                if (JSON.stringify(aliasesDraftBase[key]) === JSON.stringify(aliases[key])) continue;
+                if (aliases[key]) s.aliases[key] = aliases[key];
+                else delete s.aliases[key];
+            }
+            aliasesDraftBase = structuredClone(s.aliases);
+            $('#rwi_aliases').val(serializeAliases(s.aliases));
             s.excludedKeys = $('#rwi_excluded').val().split(/\r?\n/).map(key => key.trim()).filter(Boolean);
             save(); status('Исключения и ручные формы сохранены.'); preview().catch(report);
         } catch (error) { report(error); }
@@ -122,8 +136,20 @@ async function init() {
     });
     for (const event of [ctx.eventTypes.WORLDINFO_UPDATED, ctx.eventTypes.CHAT_CHANGED].filter(Boolean)) ctx.eventSource.on(event, () => renderSettings());
     renderSettings(true);
+    refreshWorldInfoEditor = installWorldInfoEditor({
+        nativeWI, getSettings: settings, isReady: () => dictionaryReady,
+        saveSettings: () => {
+            const input = $('#rwi_aliases');
+            if (input.val() === serializeAliases(aliasesDraftBase)) {
+                aliasesDraftBase = structuredClone(settings().aliases);
+                input.val(serializeAliases(aliasesDraftBase));
+            }
+            save();
+        },
+    });
     await loadDictionary();
     dictionaryReady = true;
+    refreshWorldInfoEditor();
     status('Словарь готов. Формы подбираются локально, без запросов к модели.');
     console.info(`[Russian WI Forms] ${VERSION} loaded`);
 }
