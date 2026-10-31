@@ -34,6 +34,8 @@
 .rwi-editor-actions .menu_button { width: auto; margin: 0; padding: 6px 10px; white-space: normal; }
 .rwi-inactive .rwi-entry-heading { opacity: .7; }
 .rwi-name-editor { margin: 8px 0; }
+.rwi-name-toggle { display: flex; align-items: center; gap: 8px; cursor: pointer; }
+.rwi-name-controls[hidden] { display: none !important; }
 .rwi-name-cases { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 3px 10px; margin-top: 8px; }
 .rwi-name-cases label { min-width: 0; font-size: .9em; }
 [name="keywordsAndLogicBlock"]:has(.rwi-entry-forms) { align-items: flex-start; }

@@ -3,7 +3,7 @@ import { installWorldInfoEditor } from './world-info-editor.js';
 import { nameEditor, nameDrafts } from './name-editor.js';
 
 const KEY = 'russianWIForms';
-const VERSION = '0.1.5';
+const VERSION = '0.1.6';
 const defaults = { enabled: true, allBooks: true, books: [], foldYo: true, guessNames: true, names: {}, excludedKeys: [], aliases: {}, senses: {} };
 const canonical = text => text.trim().toLocaleLowerCase('ru');
 const status = text => $('#rwi_status').text(text);
@@ -89,7 +89,7 @@ async function preview() {
         forms.textContent = word.choices.length || word.name ? word.forms.join(', ') : 'Нет словарного разбора. Можно выбрать род для склонения имени.';
         row.append(forms); body.append(row);
         const draftKey = JSON.stringify([key, wordIndex, canonical(word.word)]);
-        if (word.name || !word.choices.length) row.append(nameEditor(word, { getSettings: settings, save, draftKey,
+        row.append(nameEditor(word, { getSettings: settings, save, draftKey,
             refresh: () => preview().catch(report), draft: drafts.get(draftKey) }));
     }
 }

@@ -6,10 +6,10 @@ import { pathToFileURL } from 'node:url';
 const require = createRequire('C:/Users/user/AppData/Local/Temp/summaryception-ui-20261020/ui-tools/package.json');
 const { chromium } = require('playwright-core');
 const root = process.env.RWI_SOURCE_DIR ? pathToFileURL(process.env.RWI_SOURCE_DIR.replace(/\\/g, '/') + '/') : new URL('../', import.meta.url);
-const output = new URL('../review/name-declension-20261101/', import.meta.url);
+const output = process.env.RWI_OUTPUT_DIR ? pathToFileURL(process.env.RWI_OUTPUT_DIR.replace(/\\/g, '/') + '/') : new URL('../review/name-declension-20261101/', import.meta.url);
 const stURL = process.env.RWI_ST_URL || 'http://127.0.0.1:8013';
 let browser, page, savedSettings, savedEnabled, bootstrapEnabled;
-const result = { surface: 'native ST8013 editor and WI scanner', pageErrors: [], generationCalls: 0, backendRequests: [], checks: [] };
+const result = { surface: `native ${stURL} editor and WI scanner`, pageErrors: [], generationCalls: 0, backendRequests: [], checks: [] };
 const word = () => page.locator('[data-rwi-name="элдарион"]').first();
 
 async function showEntry() {
@@ -37,6 +37,7 @@ before(async () => {
     await page.route('**/*', async route => {
         const request = route.request(), url = new URL(request.url());
         if (!['127.0.0.1', 'localhost', new URL(stURL).hostname].includes(url.hostname)) return route.abort();
+        if (url.pathname === '/api/extensions/update') return route.fulfill({ json: { isUpToDate: true } });
         if (url.pathname === '/api/settings/get') {
             const response = await route.fetch(), body = await response.json();
             const serialized = typeof body.settings === 'string';
@@ -115,11 +116,11 @@ test('gender and indeclinable choices regenerate the proposed cases in the nativ
     await word().locator('select').selectOption('female');
     await page.waitForFunction(() => SillyTavern.getContext().extensionSettings.russianWIForms.names['элдарион']?.gender === 'female');
     await page.waitForTimeout(250);
-    assert.deepEqual(await word().locator('input').evaluateAll(inputs => inputs.map(input => input.value)), Array(6).fill('Элдарион'));
+    assert.deepEqual(await word().locator('.rwi-name-cases input').evaluateAll(inputs => inputs.map(input => input.value)), Array(6).fill('Элдарион'));
     await word().locator('select').selectOption('male'); await page.waitForTimeout(250);
-    assert.equal(await word().locator('input').nth(2).inputValue(), 'Элдариону');
+    assert.equal(await word().locator('.rwi-name-cases input').nth(2).inputValue(), 'Элдариону');
     await word().locator('select').selectOption('fixed'); await page.waitForTimeout(250);
-    assert.deepEqual(await word().locator('input').evaluateAll(inputs => inputs.map(input => input.value)), Array(6).fill('Элдарион'));
+    assert.deepEqual(await word().locator('.rwi-name-cases input').evaluateAll(inputs => inputs.map(input => input.value)), Array(6).fill('Элдарион'));
     await page.setViewportSize({ width: 390, height: 844 });
     await page.screenshot({ path: new URL('mobile.png', output).pathname.slice(1) });
     result.checks.push({ genderSelection: true, indeclinable: true });
@@ -127,7 +128,7 @@ test('gender and indeclinable choices regenerate the proposed cases in the nativ
 
 test('manual case corrections survive reload, replace the proposal and preserve native keys and hashes', async () => {
     await word().locator('select').selectOption('male'); await page.waitForTimeout(250);
-    await word().locator('input').nth(2).fill('Элдарионику');
+    await word().locator('.rwi-name-cases input').nth(2).fill('Элдарионику');
     const saved = page.waitForResponse(response => response.url().endsWith('/api/settings/save')
         && response.request().postData()?.includes('Элдарионику'));
     await word().getByRole('button', { name: 'Сохранить поправки', exact: true }).click(); await saved;

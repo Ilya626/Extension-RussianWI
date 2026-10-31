@@ -78,10 +78,11 @@ export function installWorldInfoEditor({ nativeWI, getSettings, saveSettings, is
             const key = result.source;
             const manual = s.aliases[canonical(key)] || [];
             const excluded = s.excludedKeys.some(item => canonical(item) === canonical(key));
-            const unknown = result.words.filter(word => !word.choices.length && !word.name);
-            const proposed = result.words.some(word => word.name);
-            const ambiguous = result.words.filter(word => word.choices.length > 1 && !word.selected && !word.name);
-            const recognized = result.words.some(word => word.selected && word.forms.length > 1 && !word.name);
+            const isName = word => word.name && word.name.mode !== 'off';
+            const unknown = result.words.filter(word => !word.choices.length && !isName(word));
+            const proposed = result.words.some(isName);
+            const ambiguous = result.words.filter(word => word.choices.length > 1 && !word.selected && !isName(word));
+            const recognized = result.words.some(word => word.selected && word.forms.length > 1 && !isName(word));
             const row = element('details', 'rwi-key-forms'); row.dataset.key = key;
             row.open = drafts.get(key)?.open || false;
             const summary = element('summary', 'rwi-key-summary');
@@ -123,7 +124,7 @@ export function installWorldInfoEditor({ nativeWI, getSettings, saveSettings, is
                     }
                     wordBlock.append(element('p', 'rwi-forms', word.choices.length || word.name ? word.forms.join(', ') : 'Нет словарного разбора. Можно выбрать род для склонения имени.'));
                     const draftKey = JSON.stringify([key, wordIndex, canonical(word.word)]);
-                    if (word.name || !word.choices.length) wordBlock.append(nameEditor(word, { getSettings, save: saveSettings, refresh, draftKey,
+                    wordBlock.append(nameEditor(word, { getSettings, save: saveSettings, refresh, draftKey,
                         draft: nameFormsDrafts.get(draftKey) }));
                     body.append(wordBlock);
                 }
