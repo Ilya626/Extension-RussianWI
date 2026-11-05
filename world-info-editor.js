@@ -12,8 +12,10 @@ function element(tag, className, text) {
     return node;
 }
 
-/** Read the native editor's active control; never write to the book or its inputs. */
+/** Extend the native editor without changing book data or saved keys. */
 export function installWorldInfoEditor({ nativeWI, getSettings, saveSettings, isReady }) {
+    // Let platform file pickers show files; native ST validates the selected format.
+    document.getElementById('world_import_file')?.removeAttribute('accept');
     let timer;
     let revision = 0;
     const states = new WeakMap();

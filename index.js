@@ -3,7 +3,7 @@ import { installWorldInfoEditor } from './world-info-editor.js';
 import { nameEditor, nameDrafts } from './name-editor.js';
 
 const KEY = 'russianWIForms';
-const VERSION = '0.1.6';
+const VERSION = '0.1.7';
 const defaults = { enabled: true, allBooks: true, books: [], foldYo: true, guessNames: true, names: {}, excludedKeys: [], aliases: {}, senses: {} };
 const canonical = text => text.trim().toLocaleLowerCase('ru');
 const status = text => $('#rwi_status').text(text);
